@@ -58,14 +58,18 @@ class Diagram(object):
     def readout(self, channel, begin, end, amplitude):
         center = (begin+end)/2
         duration = end-begin
-        xs = numpy.linspace(begin, end, 50)
+        
+        npoints = 50
+        wedge = numpy.concatenate(
+            (numpy.linspace(0, 1, npoints//2), numpy.linspace(1, 0, npoints//2)))
+        sign = -1+2*(numpy.arange(npoints)%2)
+        ys = sign * numpy.exp(wedge*4)
+        ys *= amplitude/numpy.abs(ys).max()
+        ys[0] = ys[-1] = 0
         
         y = self._channels[channel]
-        noisy_sinc = numpy.random.normal(numpy.sinc(8*(xs-center)/duration), .1)
-        noisy_sinc /= noisy_sinc.max()
-        ys = y+amplitude*noisy_sinc
-        ys[0] = ys[-1] = y
-        self.plot.plot(xs, ys, color="black")
+        xs = numpy.linspace(begin, end, npoints)
+        self.plot.plot(xs, y+ys, color="black")
     
     def marker(self, x, min_y):
         max_y = (
