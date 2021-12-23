@@ -1,24 +1,32 @@
 import matplotlib.collections
 import matplotlib.patches
 import matplotlib.pyplot
+import matplotlib.ticker
 import numpy
 
 class Diagram(object):
-    def __init__(self, plot, channels, start):
+    def __init__(self, plot, channels):
         self._channel_height = 2
         self._channel_gap = 0.2
         
         self.plot = plot
-        self.plot.set_axis_off()
+        self.plot.spines[:].set_visible(False)
         
         self._channels = { 
             x: i*(self._channel_height+self._channel_gap)
             for i, x in enumerate(channels[::-1]) }
         
-        for name, y in self._channels.items():
-            self.plot.text(
-                start, y, name+"    ",
-                horizontalalignment="right", verticalalignment="center")
+        self.plot.xaxis.set_major_locator(matplotlib.ticker.NullLocator())
+        self.plot.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+        
+        self.plot.yaxis.set_major_locator(
+            matplotlib.ticker.FixedLocator(sorted(self._channels.values())))
+        self.plot.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+        def channel_formatter(x, pos):
+            distances = [numpy.abs(x-value) for value in self._channels.values()]
+            return list(self._channels.keys())[numpy.argmin(distances)]
+        self.plot.yaxis.set_major_formatter(channel_formatter)
+        self.plot.yaxis.set_tick_params(length=0, width=0)
     
     def idle(self, channel_or_channels, begin, end):
         if isinstance(channel_or_channels, str):
