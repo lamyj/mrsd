@@ -1,4 +1,3 @@
-import matplotlib.patches
 import matplotlib.pyplot
 import matplotlib.ticker
 import numpy
@@ -88,13 +87,12 @@ class Diagram(object):
         y0 = self._channels[channel]
         self.plot.annotate(label, (x, y0+y))
     
-    def interval(self, begin, end, y, label, mutation_scale=20):
+    def interval(self, begin, end, y, label):
         self._marker(begin, y)
         self._marker(end, y)
-        arrow = matplotlib.patches.FancyArrowPatch(
-            (begin, y), (end, y), arrowstyle="<|-|>",
-            mutation_scale=mutation_scale, color="black")
-        self.plot.add_patch(arrow)
+        
+        self.plot.annotate(
+            "", (begin, y), (end, y), arrowprops={"arrowstyle":"<|-|>"})
         self.plot.text(
             (begin+end)/2, y, label, horizontalalignment="center",
             verticalalignment="bottom")

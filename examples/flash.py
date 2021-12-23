@@ -59,7 +59,7 @@ diagram.idle_all(TR+RF_duration/2, TR+RF_duration)
 # Add annotations: flip angles and TE/TR intervals
 diagram.annotate("RF", 0.2, r"$\alpha$", 1)
 diagram.annotate("RF", TR+0.2, r"$\alpha$", 1)
-diagram.interval(0, TE, -1.5, "TE", 10)
-diagram.interval(0, TR, -2.5, "TR", 10)
+diagram.interval(0, TE, -1.5, "TE")
+diagram.interval(0, TR, -2.5, "TR")
 
 matplotlib.pyplot.show()
