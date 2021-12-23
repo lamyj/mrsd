@@ -71,19 +71,18 @@ class Diagram(object):
                 (begin, begin, end, end), (y0, y0+y, y0+y, y0), color="black")
     
     def readout(self, channel, begin, end, amplitude):
-        center = (begin+end)/2
-        duration = end-begin
-        
-        npoints = 50
-        wedge = numpy.concatenate(
-            (numpy.linspace(0, 1, npoints//2), numpy.linspace(1, 0, npoints//2)))
+        npoints = 26
+        slope = numpy.linspace(0, 1, npoints)
         sign = -1+2*(numpy.arange(npoints)%2)
-        ys = sign * numpy.exp(wedge*4)
+        ys = sign * numpy.exp(slope*4)
+        # Make symmetrical
+        ys = numpy.concatenate((ys, ys[-2::-1]))
+        # Normalize amplitude and taper the ends
         ys *= amplitude/numpy.abs(ys).max()
         ys[0] = ys[-1] = 0
         
         y = self._channels[channel]
-        xs = numpy.linspace(begin, end, npoints)
+        xs = numpy.linspace(begin, end, 2*npoints-1)
         self.plot.plot(xs, y+ys, color="black")
     
     def annotate(self, channel, x, label, y):
