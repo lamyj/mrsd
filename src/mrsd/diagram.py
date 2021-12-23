@@ -86,6 +86,10 @@ class Diagram(object):
         xs = numpy.linspace(begin, end, npoints)
         self.plot.plot(xs, y+ys, color="black")
     
+    def annotate(self, channel, x, label, y):
+        y0 = self._channels[channel]
+        self.plot.annotate(label, (x, y0+y))
+    
     def interval(self, begin, end, y, label, mutation_scale=20):
         self._marker(begin, y)
         self._marker(end, y)
