@@ -55,6 +55,13 @@ class Diagram(object):
             matplotlib.patches.Rectangle(
                 (begin, y), end-begin, amplitude, color=(0, 0, 0, 0.2)))
     
+    def stepped_gradient(self, channel, begin, end, amplitude):
+        y0 = self._channels[channel]
+        
+        for y in [-amplitude, -amplitude/2, 0, amplitude/2, amplitude]:
+            self.plot.plot(
+                (begin, begin, end, end), (y0, y0+y, y0+y, y0), color="black")
+    
     def readout(self, channel, begin, end, amplitude):
         center = (begin+end)/2
         duration = end-begin
