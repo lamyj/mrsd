@@ -86,13 +86,9 @@ class Diagram(object):
         xs = numpy.linspace(begin, end, npoints)
         self.plot.plot(xs, y+ys, color="black")
     
-    def marker(self, x, min_y):
-        max_y = (
-            len(self._channels)
-            *(self._channel_height+self._channel_gap)-self._channel_height/2)
-        self.plot.plot([x, x], [min_y, max_y], "--", lw=1, color="black")
-    
     def interval(self, begin, end, y, label, mutation_scale=20):
+        self._marker(begin, y)
+        self._marker(end, y)
         arrow = matplotlib.patches.FancyArrowPatch(
             (begin, y), (end, y), arrowstyle="<|-|>",
             mutation_scale=mutation_scale, color="black")
@@ -100,3 +96,9 @@ class Diagram(object):
         self.plot.text(
             (begin+end)/2, y, label, horizontalalignment="center",
             verticalalignment="bottom")
+    
+    def _marker(self, x, min_y):
+        max_y = (
+            len(self._channels)
+            *(self._channel_height+self._channel_gap)-self._channel_height/2)
+        self.plot.plot([x, x], [min_y, max_y], "-", lw=0.3, color="black")
