@@ -40,12 +40,15 @@ class Diagram(object):
         for channel in self._channels:
             self.idle(channel, begin, end)
     
-    def sinc_pulse(self, channel, center, duration, amplitude):
-        xs = numpy.linspace(center-duration/2, center+duration/2, 100)
+    def sinc_pulse(self, channel, center, duration, amplitude, lobes=4):
+        support = numpy.linspace(-1, 1, 100)
         
-        y = self._channels[channel]
-        ys = y+amplitude*numpy.sinc(4*(xs-center)/duration)
-        self.plot.plot(xs, ys, color="black")
+        y0 = self._channels[channel]
+        sinc = numpy.sinc(2*lobes*support)
+        taper = numpy.cos(numpy.pi/2*support)
+        
+        self.plot.plot(
+            support*duration/2+center, y0+amplitude*sinc*taper, color="black")
     
     def hard_pulse(self, channel, center, duration, amplitude):
         y = self._channels[channel]
