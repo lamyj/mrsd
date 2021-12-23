@@ -1,4 +1,3 @@
-import matplotlib.collections
 import matplotlib.patches
 import matplotlib.pyplot
 import matplotlib.ticker
@@ -59,12 +58,9 @@ class Diagram(object):
     
     def gradient(self, channel, begin, end, amplitude):
         y = self._channels[channel]
-        self.plot.plot(
-            (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
-            color="black")
-        self.plot.add_patch(
-            matplotlib.patches.Rectangle(
-                (begin, y), end-begin, amplitude, color=(0, 0, 0, 0.2)))
+        shape = (begin, begin, end, end), (y, y+amplitude, y+amplitude, y)
+        self.plot.fill(*shape, facecolor=(0, 0, 0, 0.2), edgecolor=None)
+        self.plot.plot(*shape, color="black")
     
     def stepped_gradient(self, channel, begin, end, amplitude):
         y0 = self._channels[channel]
