@@ -44,7 +44,7 @@ diagram.idle(["RF", "Signal"], *encoding)
 
 # Readout, centered on TE
 diagram.gradient("$G_{readout}$", *readout, dephasing)
-diagram.readout("Signal", *readout, +1)
+diagram.echo("Signal", *readout, +1)
 diagram.idle(["RF", "$G_{slice}$", "$G_{phase}$"], *readout)
 
 # Idle until end of TR

@@ -68,7 +68,7 @@ class Diagram(object):
             self.plot.plot(
                 (begin, begin, end, end), (y0, y0+y, y0+y, y0), color="black")
     
-    def readout(self, channel, begin, end, amplitude):
+    def echo(self, channel, begin, end, amplitude):
         npoints = 26
         slope = numpy.linspace(0, 1, npoints)
         sign = -1+2*(numpy.arange(npoints)%2)
