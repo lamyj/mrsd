@@ -28,7 +28,7 @@ diagram = mrsd.Diagram(
     plot, ["RF", "$G_{slice}$", "$G_{phase}$", "$G_{readout}$", "Signal"])
 
 # Slice-selective pulse of the first TR
-diagram.sinc_pulse("RF", 0, RF_duration, 1)
+diagram.sinc_pulse("RF", *RF[0], 1)
 diagram.gradient("$G_{slice}$", *RF[0], selection)
 diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *RF[0])
 
@@ -51,7 +51,7 @@ diagram.idle(["RF", "$G_{slice}$", "$G_{phase}$"], *readout)
 diagram.idle_all(readout[1], RF[1][0])
 
 # Start of next TR
-diagram.sinc_pulse("RF", TR, RF_duration, 1)
+diagram.sinc_pulse("RF", *RF[1], 1)
 diagram.gradient("$G_{slice}$", *RF[1], selection)
 diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *RF[1])
 diagram.idle_all(TR+RF_duration/2, TR+RF_duration)
