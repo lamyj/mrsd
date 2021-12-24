@@ -12,37 +12,36 @@ diagram = mrsd.Diagram(
     plot, ["RF", "$G_{slice}$", "$G_{phase}$", "$G_{readout}$", "Signal"])
 
 # Slice-selective pulse of the first TR
-diagram.sinc_pulse("RF", 0, RF_duration, 1)
-diagram.gradient("$G_{slice}$", *RF[0], selection)
-diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *RF[0])
+diagram.sinc_pulse("RF", *pulses[0], 1)
+diagram.gradient("$G_{slice}$", *pulses[0], G_slice[0])
+diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *pulses[0])
 
 # Dead time until the start of encoding
-diagram.idle_all(RF[0][1], encoding[0])
+diagram.idle_all(pulses[0][1], encoding[0])
 
 # Encoding: rewind slice-selection gradient, run phase gradient, prephase
 # read-out gradient
-diagram.gradient("$G_{slice}$", *encoding, rewind)
+diagram.gradient("$G_{slice}$", *encoding, G_slice[1])
 diagram.stepped_gradient("$G_{phase}$", *encoding, 1)
-diagram.gradient("$G_{readout}$", *encoding, prephasing)
+diagram.gradient("$G_{readout}$", *encoding, G_readout[1])
 diagram.idle(["RF", "Signal"], *encoding)
 
 # Readout, centered on TE
-diagram.gradient("$G_{readout}$", *readout, dephasing)
-diagram.readout("Signal", *readout, +1)
+diagram.gradient("$G_{readout}$", *readout, G_readout[0])
+diagram.echo("Signal", *readout, +1)
 diagram.idle(["RF", "$G_{slice}$", "$G_{phase}$"], *readout)
 
 # Idle until end of TR
-diagram.idle_all(readout[1], RF[1][0])
+diagram.idle_all(readout[1], pulses[1][0])
 
 # Start of next TR
-diagram.sinc_pulse("RF", TR, RF_duration, 1)
-diagram.gradient("$G_{slice}$", *RF[1], selection)
-diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *RF[1])
-diagram.idle_all(TR+RF_duration/2, TR+RF_duration)
+diagram.sinc_pulse("RF", *pulses[1], 1)
+diagram.gradient("$G_{slice}$", *pulses[1], G_slice[0])
+diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *pulses[1])
 
 # Add annotations: flip angles and TE/TR intervals
 diagram.annotate("RF", 0.2, r"$\alpha$", 1)
 diagram.annotate("RF", TR+0.2, r"$\alpha$", 1)
-diagram.interval(0, TE, -1.5, "TE", 10)
-diagram.interval(0, TR, -2.5, "TR", 10)
+diagram.interval(0, TE, -1.5, "TE")
+diagram.interval(0, TR, -2.5, "TR")
 ```
