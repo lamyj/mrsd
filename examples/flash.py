@@ -2,7 +2,7 @@ import matplotlib.pyplot
 
 import mrsd
 
-# Define sequence parameters (arbitraty units)
+# Define sequence parameters (arbitrary units)
 TE = 4
 TR = 10
 RF_duration = 1
@@ -10,8 +10,8 @@ encoding_duration = 1
 readout_duration = 2
 
 # Compute time intervals
-RF = [(t-RF_duration/2, t+RF_duration/2) for t in [0, TR]]
-readout = TE-readout_duration/2, TE+readout_duration/2
+RF = [mrsd.interval(t, RF_duration) for t in [0, TR]]
+readout = mrsd.interval(TE, readout_duration)
 encoding = readout[0]-encoding_duration, readout[0]
 
 # Compute normalized gradient areas
