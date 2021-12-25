@@ -1,10 +1,8 @@
 # mrsd: a toolkit to generate MR sequence diagrams
 
-*mrsd* is a Python toolkit to generate MR sequence diagrams, as shown below for the basic [FLASH](https://onlinelibrary.wiley.com/doi/10.1002/mrm.1910030217) sequence.
+*mrsd* is a Python toolkit to generate MR sequence diagrams, as shown below for the basic [FLASH](https://onlinelibrary.wiley.com/doi/10.1002/mrm.1910030217) sequence -- the full version of the code is available in the *examples* directory.
 
 ![FLASH sequence diagram generated with mrsd](flash.png)
-
-*mrsd* is based on [Matplotlib](https://matplotlib.org/) and additionally requires [numpy](https://numpy.org/). The code which generated the previous diagram is available in the *examples* direction, and an excerpt is shown below.
 
 ```python
 figure, plot = matplotlib.pyplot.subplots()
@@ -45,3 +43,5 @@ diagram.annotate("RF", TR+0.2, r"$\alpha$", 1)
 diagram.interval(0, TE, -1.5, "TE")
 diagram.interval(0, TR, -2.5, "TR")
 ```
+
+*mrsd* is available on [PyPi](https://pypi.org/project/mrsd/). To install from source, the only dependencies are [Matplotlib](https://matplotlib.org/) and [numpy](https://numpy.org/).
