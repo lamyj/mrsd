@@ -26,17 +26,19 @@ class Diagram(object):
         self.plot.yaxis.set_major_formatter(channel_formatter)
         self.plot.yaxis.set_tick_params(length=0, width=0)
     
-    def idle(self, channel_or_channels, begin, end):
+    def idle(self, channel_or_channels, begin, end, **kwargs):
         if isinstance(channel_or_channels, str):
             y = self._channels[channel_or_channels]
-            self.plot.plot((begin, end), (y, y), color="black")
+            args = {"color": "black"}
+            args.update(kwargs)
+            self.plot.plot((begin, end), (y, y), **args)
         else:
             for channel in channel_or_channels:
-                self.idle(channel, begin, end)
+                self.idle(channel, begin, end, **kwargs)
     
-    def idle_all(self, begin, end):
+    def idle_all(self, begin, end, **kwargs):
         for channel in self._channels:
-            self.idle(channel, begin, end)
+            self.idle(channel, begin, end, **kwargs)
     
     def sinc_pulse(self, channel, begin, end, amplitude, lobes=4):
         center, span = 0.5*(begin+end), end-begin
