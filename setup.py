@@ -39,4 +39,6 @@ setuptools.setup(
     package_dir={"mrsd": "src/mrsd"},
     
     python_requires=">=3.5",
+    
+    install_requires=["matplotlib", "numpy"],
 )
