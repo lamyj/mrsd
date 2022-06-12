@@ -7,7 +7,7 @@ long_description = open(os.path.join(here, "README.md")).read()
 
 setuptools.setup(
     name="mrsd",
-    version="0.2.0",
+    version="0.3.0",
     
     description="MR sequence diagram toolkit",
     long_description=long_description,
