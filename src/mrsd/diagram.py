@@ -40,7 +40,7 @@ class Diagram(object):
         for channel in self._channels:
             self.idle(channel, begin, end, **kwargs)
     
-    def sinc_pulse(self, channel, begin, end, amplitude, lobes=4):
+    def sinc_pulse(self, channel, begin, end, amplitude, lobes=4, color="black"):
         center, span = 0.5*(begin+end), end-begin
         support = numpy.linspace(-1, 1, 100)
         
@@ -49,28 +49,32 @@ class Diagram(object):
         taper = numpy.cos(numpy.pi/2*support)
         
         self.plot.plot(
-            support*span/2+center, y0+amplitude*sinc*taper, color="black")
+            support*span/2+center, y0+amplitude*sinc*taper, color=color)
     
-    def hard_pulse(self, channel, begin, end, amplitude):
+    def hard_pulse(self, channel, begin, end, amplitude, color="black"):
         y = self._channels[channel]
         self.plot.plot(
             (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
-            color="black")
+            color=color)
     
-    def gradient(self, channel, begin, end, amplitude):
+    def gradient(self, channel, begin, end, amplitude, color="black", alpha=0.2):
         y = self._channels[channel]
         shape = (begin, begin, end, end), (y, y+amplitude, y+amplitude, y)
-        self.plot.fill(*shape, facecolor=(0, 0, 0, 0.2), edgecolor=None)
-        self.plot.plot(*shape, color="black")
+        
+        facecolor = list(matplotlib.colors.to_rgba(color))
+        facecolor[3] *= alpha
+        
+        self.plot.fill(*shape, facecolor=facecolor, edgecolor=None)
+        self.plot.plot(*shape, color=color)
     
-    def stepped_gradient(self, channel, begin, end, amplitude):
+    def stepped_gradient(self, channel, begin, end, amplitude, color="black"):
         y0 = self._channels[channel]
         
         for y in [-amplitude, -amplitude/2, 0, amplitude/2, amplitude]:
             self.plot.plot(
-                (begin, begin, end, end), (y0, y0+y, y0+y, y0), color="black")
+                (begin, begin, end, end), (y0, y0+y, y0+y, y0), color=color)
     
-    def echo(self, channel, begin, end, amplitude):
+    def echo(self, channel, begin, end, amplitude, color="black"):
         npoints = 26
         slope = numpy.linspace(0, 1, npoints)
         sign = -1+2*(numpy.arange(npoints)%2)
@@ -83,24 +87,25 @@ class Diagram(object):
         
         y = self._channels[channel]
         xs = numpy.linspace(begin, end, 2*npoints-1)
-        self.plot.plot(xs, y+ys, color="black")
+        self.plot.plot(xs, y+ys, color=color)
     
-    def annotate(self, channel, x, label, y):
+    def annotate(self, channel, x, label, y, color="black"):
         y0 = self._channels[channel]
-        self.plot.annotate(label, (x, y0+y))
+        self.plot.annotate(label, (x, y0+y), color=color)
     
-    def interval(self, begin, end, y, label):
-        self._marker(begin, y)
-        self._marker(end, y)
+    def interval(self, begin, end, y, label, color="black"):
+        self._marker(begin, y, color=color)
+        self._marker(end, y, color=color)
         
         self.plot.annotate(
-            "", (begin, y), (end, y), arrowprops={"arrowstyle":"<|-|>"})
+            "", (begin, y), (end, y),
+            arrowprops={"arrowstyle":"<|-|>", "color": color})
         self.plot.text(
-            (begin+end)/2, y, label, horizontalalignment="center",
-            verticalalignment="bottom")
+            (begin+end)/2, y, label, color=color,
+            horizontalalignment="center", verticalalignment="bottom")
     
-    def _marker(self, x, min_y):
+    def _marker(self, x, min_y, color="black"):
         max_y = (
             len(self._channels)
             *(self._channel_height+self._channel_gap)-self._channel_height/2)
-        self.plot.plot([x, x], [min_y, max_y], "-", lw=0.3, color="black")
+        self.plot.plot([x, x], [min_y, max_y], "-", lw=0.3, color=color)
