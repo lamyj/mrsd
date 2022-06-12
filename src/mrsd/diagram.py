@@ -88,12 +88,22 @@ class Diagram(object):
         self._update_time_range(begin, end)
         self._events[channel].append((begin, end))
     
-    def stepped_gradient(self, channel, begin, end, amplitude, color="black"):
+    def stepped_gradient(
+            self, channel, begin, end, amplitude,
+            direction=None, location="left", offset=0.1,
+            color="black"):
         y0 = self._channels[channel]
         
         for y in [-amplitude, -amplitude/2, 0, amplitude/2, amplitude]:
             self.plot.plot(
                 (begin, begin, end, end), (y0, y0+y, y0+y, y0), color=color)
+        
+        if direction is not None:
+            arrowstyle = "<|-" if direction == +1 else "-|>"
+            location = begin-offset if location == "left" else end+offset
+            self.plot.annotate(
+                "", (location, y0-amplitude), (location, y0+amplitude),
+                arrowprops={"arrowstyle": arrowstyle, "color": color})
         
         self._update_time_range(begin, end)
         self._events[channel].append((begin, end))
