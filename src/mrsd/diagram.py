@@ -1,3 +1,5 @@
+import copy
+
 import matplotlib.pyplot
 import matplotlib.ticker
 import numpy
@@ -14,6 +16,12 @@ class Diagram(object):
             x: i*(self._channel_height+self._channel_gap)
             for i, x in enumerate(channels[::-1]) }
         
+        # Minimum and maximum time at which an event was specified
+        self._t_min = numpy.inf
+        self._t_max = -numpy.inf
+        # Begin and end time of each event, per channel
+        self._events = {x: [] for x in channels}
+        
         self.plot.xaxis.set_major_locator(matplotlib.ticker.NullLocator())
         self.plot.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
         
@@ -28,10 +36,14 @@ class Diagram(object):
     
     def idle(self, channel_or_channels, begin, end, **kwargs):
         if isinstance(channel_or_channels, str):
-            y = self._channels[channel_or_channels]
+            channel = channel_or_channels
+            y = self._channels[channel]
             args = {"color": "black"}
             args.update(kwargs)
             self.plot.plot((begin, end), (y, y), **args)
+            
+            self._update_time_range(begin, end)
+            self._events[channel].append((begin, end))
         else:
             for channel in channel_or_channels:
                 self.idle(channel, begin, end, **kwargs)
@@ -50,12 +62,18 @@ class Diagram(object):
         
         self.plot.plot(
             support*span/2+center, y0+amplitude*sinc*taper, color=color)
+        
+        self._update_time_range(begin, end)
+        self._events[channel].append((begin, end))
     
     def hard_pulse(self, channel, begin, end, amplitude, color="black"):
         y = self._channels[channel]
         self.plot.plot(
             (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
             color=color)
+        
+        self._update_time_range(begin, end)
+        self._events[channel].append((begin, end))
     
     def gradient(self, channel, begin, end, amplitude, color="black", alpha=0.2):
         y = self._channels[channel]
@@ -66,6 +84,9 @@ class Diagram(object):
         
         self.plot.fill(*shape, facecolor=facecolor, edgecolor=None)
         self.plot.plot(*shape, color=color)
+        
+        self._update_time_range(begin, end)
+        self._events[channel].append((begin, end))
     
     def stepped_gradient(self, channel, begin, end, amplitude, color="black"):
         y0 = self._channels[channel]
@@ -73,6 +94,9 @@ class Diagram(object):
         for y in [-amplitude, -amplitude/2, 0, amplitude/2, amplitude]:
             self.plot.plot(
                 (begin, begin, end, end), (y0, y0+y, y0+y, y0), color=color)
+        
+        self._update_time_range(begin, end)
+        self._events[channel].append((begin, end))
     
     def echo(self, channel, begin, end, amplitude, color="black"):
         npoints = 26
@@ -88,6 +112,9 @@ class Diagram(object):
         y = self._channels[channel]
         xs = numpy.linspace(begin, end, 2*npoints-1)
         self.plot.plot(xs, y+ys, color=color)
+        
+        self._update_time_range(begin, end)
+        self._events[channel].append((begin, end))
     
     def annotate(self, channel, x, label, y, color="black"):
         y0 = self._channels[channel]
@@ -104,8 +131,24 @@ class Diagram(object):
             (begin+end)/2, y, label, color=color,
             horizontalalignment="center", verticalalignment="bottom")
     
+    def auto_idle(self):
+        events_copy = copy.deepcopy(self._events)
+        for channel, events in events_copy.items():
+            for index, event in enumerate(events):
+                if index == 0:
+                    self.idle(channel, self._t_min, event[0])
+                elif events[index-1][1] != event[0]:
+                    self.idle(channel, events[index-1][1], event[0])
+                if index == len(events)-1:
+                    self.idle(channel, event[1], self._t_max)
+        self._events = events_copy
+    
     def _marker(self, x, min_y, color="black"):
         max_y = (
             len(self._channels)
             *(self._channel_height+self._channel_gap)-self._channel_height/2)
         self.plot.plot([x, x], [min_y, max_y], "-", lw=0.3, color=color)
+    
+    def _update_time_range(self, begin, end):
+        self._t_min = min(self._t_min, begin)
+        self._t_max = max(self._t_max, end)
