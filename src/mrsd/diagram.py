@@ -4,6 +4,12 @@ import matplotlib.pyplot
 import matplotlib.ticker
 import numpy
 
+from .adc import ADC
+from .echo import Echo
+from .gradient import Gradient
+from .multi_gradient import MultiGradient
+from .rf_pulse import RFPulse
+
 class Diagram(object):
     def __init__(self, plot, channels):
         self._channel_height = 2
@@ -34,6 +40,13 @@ class Diagram(object):
         self.plot.yaxis.set_major_formatter(channel_formatter)
         self.plot.yaxis.set_tick_params(length=0, width=0)
     
+    def add(self, channel, event):
+        """ Add an event to the specified channel.
+        """
+        
+        event.offset[1] += self._channels[channel]
+        self.plot.add_patch(event)
+    
     def idle(self, channel_or_channels, begin, end, **kwargs):
         if isinstance(channel_or_channels, str):
             channel = channel_or_channels
@@ -52,79 +65,64 @@ class Diagram(object):
         for channel in self._channels:
             self.idle(channel, begin, end, **kwargs)
     
-    def sinc_pulse(self, channel, begin, end, amplitude, lobes=4, color="black"):
-        center, span = 0.5*(begin+end), end-begin
-        support = numpy.linspace(-1, 1, 100)
-        
-        y0 = self._channels[channel]
-        sinc = numpy.sinc(2*lobes*support)
-        taper = numpy.cos(numpy.pi/2*support)
-        
-        self.plot.plot(
-            support*span/2+center, y0+amplitude*sinc*taper, color=color)
-        
-        self._update_time_range(begin, end)
-        self._events[channel].append((begin, end))
+    # def sinc_pulse(self, channel, begin, end, amplitude, lobes=4, color="black"):
+    #     center, span = 0.5*(begin+end), end-begin
+    #     support = numpy.linspace(-1, 1, 100)
+    #     
+    #     y0 = self._channels[channel]
+    #     sinc = numpy.sinc(2*lobes*support)
+    #     taper = numpy.cos(numpy.pi/2*support)
+    #     
+    #     self.plot.plot(
+    #         support*span/2+center, y0+amplitude*sinc*taper, color=color)
+    #     
+    #     self._update_time_range(begin, end)
+    #     self._events[channel].append((begin, end))
+    # 
+    # def hard_pulse(self, channel, begin, end, amplitude, color="black"):
+    #     y = self._channels[channel]
+    #     self.plot.plot(
+    #         (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
+    #         color=color)
+    #     
+    #     self._update_time_range(begin, end)
+    #     self._events[channel].append((begin, end))
     
-    def hard_pulse(self, channel, begin, end, amplitude, color="black"):
-        y = self._channels[channel]
-        self.plot.plot(
-            (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
-            color=color)
-        
-        self._update_time_range(begin, end)
-        self._events[channel].append((begin, end))
+    def adc(self, channel, *args, **kwargs):
+        event = ADC(*args, **kwargs)
+        self.add(channel, event)
+        return event
     
-    def gradient(self, channel, begin, end, amplitude, color="black", alpha=0.2):
-        y = self._channels[channel]
-        shape = (begin, begin, end, end), (y, y+amplitude, y+amplitude, y)
-        
-        facecolor = list(matplotlib.colors.to_rgba(color))
-        facecolor[3] *= alpha
-        
-        self.plot.fill(*shape, facecolor=facecolor, edgecolor=None)
-        self.plot.plot(*shape, color=color)
-        
-        self._update_time_range(begin, end)
-        self._events[channel].append((begin, end))
+    def echo(self, channel, *args, **kwargs):
+        event = Echo(*args, **kwargs)
+        self.add(channel, event)
+        return event
     
-    def stepped_gradient(
-            self, channel, begin, end, amplitude,
-            direction=None, location="left", offset=0.1,
-            color="black"):
-        y0 = self._channels[channel]
-        
-        for y in [-amplitude, -amplitude/2, 0, amplitude/2, amplitude]:
-            self.plot.plot(
-                (begin, begin, end, end), (y0, y0+y, y0+y, y0), color=color)
-        
-        if direction is not None:
-            arrowstyle = "<|-" if direction == +1 else "-|>"
-            location = begin-offset if location == "left" else end+offset
-            self.plot.annotate(
-                "", (location, y0-amplitude), (location, y0+amplitude),
-                arrowprops={"arrowstyle": arrowstyle, "color": color})
-        
-        self._update_time_range(begin, end)
-        self._events[channel].append((begin, end))
+    def gradient(self, channel, *args, **kwargs):
+        event = Gradient(*args, **kwargs)
+        self.add(channel, event)
+        return event
     
-    def echo(self, channel, begin, end, amplitude, color="black"):
-        npoints = 26
-        slope = numpy.linspace(0, 1, npoints)
-        sign = -1+2*(numpy.arange(npoints)%2)
-        ys = sign * numpy.exp(slope*4)
-        # Make symmetrical
-        ys = numpy.concatenate((ys, ys[-2::-1]))
-        # Normalize amplitude and taper the ends
-        ys *= amplitude/numpy.abs(ys).max()
-        ys[0] = ys[-1] = 0
-        
-        y = self._channels[channel]
-        xs = numpy.linspace(begin, end, 2*npoints-1)
-        self.plot.plot(xs, y+ys, color=color)
-        
-        self._update_time_range(begin, end)
-        self._events[channel].append((begin, end))
+    def multi_gradient(self, channel, *args, **kwargs):
+        event = MultiGradient(*args, **kwargs)
+        self.add(channel, event)
+        return event
+    
+    def rf_pulse(self, channel, *args, **kwargs):
+        event = RFPulse(*args, **kwargs)
+        self.add(channel, event)
+        return event
+    
+    def hard_pulse(self, channel, *args, **kwargs):
+        event = RFPulse(*args, envelope="box", **kwargs)
+        self.add(channel, event)
+        return event
+    
+    def sinc_pulse(self, channel, *args, **kwargs):
+        kwargs.update({"envelope": "sinc"})
+        event = RFPulse(*args, **kwargs)
+        self.add(channel, event)
+        return event
     
     def annotate(self, channel, x, label, y, color="black"):
         y0 = self._channels[channel]
