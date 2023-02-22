@@ -22,12 +22,6 @@ class Diagram(object):
             x: i*(self._channel_height+self._channel_gap)
             for i, x in enumerate(channels[::-1]) }
         
-        # Minimum and maximum time at which an event was specified
-        self._t_min = numpy.inf
-        self._t_max = -numpy.inf
-        # Begin and end time of each event, per channel
-        self._events = {x: [] for x in channels}
-        
         self.plot.xaxis.set_major_locator(matplotlib.ticker.NullLocator())
         self.plot.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
         
@@ -39,6 +33,11 @@ class Diagram(object):
             return list(self._channels.keys())[numpy.argmin(distances)]
         self.plot.yaxis.set_major_formatter(channel_formatter)
         self.plot.yaxis.set_tick_params(length=0, width=0)
+        
+        self._background_line_style = {"color": "0.9", "lw": 1, "zorder": -1}
+        
+        for y in self._channels.values():
+            self.plot.axhline(y, **self._background_line_style)
     
     def add(self, channel, event):
         """ Add an event to the specified channel.
@@ -47,116 +46,83 @@ class Diagram(object):
         event.offset[1] += self._channels[channel]
         self.plot.add_patch(event)
     
-    def idle(self, channel_or_channels, begin, end, **kwargs):
-        if isinstance(channel_or_channels, str):
-            channel = channel_or_channels
-            y = self._channels[channel]
-            args = {"color": "black"}
-            args.update(kwargs)
-            self.plot.plot((begin, end), (y, y), **args)
-            
-            self._update_time_range(begin, end)
-            self._events[channel].append((begin, end))
-        else:
-            for channel in channel_or_channels:
-                self.idle(channel, begin, end, **kwargs)
-    
-    def idle_all(self, begin, end, **kwargs):
-        for channel in self._channels:
-            self.idle(channel, begin, end, **kwargs)
-    
-    # def sinc_pulse(self, channel, begin, end, amplitude, lobes=4, color="black"):
-    #     center, span = 0.5*(begin+end), end-begin
-    #     support = numpy.linspace(-1, 1, 100)
-    #     
-    #     y0 = self._channels[channel]
-    #     sinc = numpy.sinc(2*lobes*support)
-    #     taper = numpy.cos(numpy.pi/2*support)
-    #     
-    #     self.plot.plot(
-    #         support*span/2+center, y0+amplitude*sinc*taper, color=color)
-    #     
-    #     self._update_time_range(begin, end)
-    #     self._events[channel].append((begin, end))
-    # 
-    # def hard_pulse(self, channel, begin, end, amplitude, color="black"):
-    #     y = self._channels[channel]
-    #     self.plot.plot(
-    #         (begin, begin, end, end), (y, y+amplitude, y+amplitude, y),
-    #         color=color)
-    #     
-    #     self._update_time_range(begin, end)
-    #     self._events[channel].append((begin, end))
-    
     def adc(self, channel, *args, **kwargs):
+        """ Add an ADC event to the specified channel.
+        """
+        
         event = ADC(*args, **kwargs)
         self.add(channel, event)
         return event
     
     def echo(self, channel, *args, **kwargs):
+        """ Add an echo event to the specified channel.
+        """
+        
         event = Echo(*args, **kwargs)
         self.add(channel, event)
         return event
     
     def gradient(self, channel, *args, **kwargs):
+        """ Add a gradient event to the specified channel.
+        """
+        
         event = Gradient(*args, **kwargs)
         self.add(channel, event)
         return event
     
     def multi_gradient(self, channel, *args, **kwargs):
+        """ Add a multi-gradient event to the specified channel.
+        """
+        
         event = MultiGradient(*args, **kwargs)
         self.add(channel, event)
         return event
     
     def rf_pulse(self, channel, *args, **kwargs):
+        """ Add an RF pulse event to the specified channel.
+        """
+        
         event = RFPulse(*args, **kwargs)
         self.add(channel, event)
         return event
     
     def hard_pulse(self, channel, *args, **kwargs):
+        """ Add a hard RF pulse event to the specified channel.
+        """
+        
         event = RFPulse(*args, envelope="box", **kwargs)
         self.add(channel, event)
         return event
     
     def sinc_pulse(self, channel, *args, **kwargs):
-        kwargs.update({"envelope": "sinc"})
+        """ Add a sinc RF pulse event to the specified channel.
+        """
+        
+        kwargs["envelope"] = "sinc"
         event = RFPulse(*args, **kwargs)
         self.add(channel, event)
         return event
     
-    def annotate(self, channel, x, label, y, color="black"):
-        y0 = self._channels[channel]
-        self.plot.annotate(label, (x, y0+y), color=color)
+    def annotate(self, channel, x, y, text, **kwargs):
+        """ Add an annotation to the diagram
+        """
+        
+        self.plot.text(x, self._channels[channel]+y, text, **kwargs)
     
-    def interval(self, begin, end, y, label, color="black"):
-        self._marker(begin, y, color=color)
-        self._marker(end, y, color=color)
+    def interval(self, begin, end, y, label, color="k"):
+        self.plot.set(ylim=min(y, self.plot.get_ylim()[0]))
         
         self.plot.annotate(
             "", (begin, y), (end, y),
-            arrowprops={"arrowstyle":"<|-|>", "color": color})
+            arrowprops={
+                "arrowstyle":"<|-|>", "shrinkA": 0, "shrinkB": 0,
+                **self._background_line_style})
         self.plot.text(
-            (begin+end)/2, y, label, color=color,
-            horizontalalignment="center", verticalalignment="bottom")
-    
-    def auto_idle(self):
-        events_copy = copy.deepcopy(self._events)
-        for channel, events in events_copy.items():
-            for index, event in enumerate(events):
-                if index == 0:
-                    self.idle(channel, self._t_min, event[0])
-                elif events[index-1][1] != event[0]:
-                    self.idle(channel, events[index-1][1], event[0])
-                if index == len(events)-1:
-                    self.idle(channel, event[1], self._t_max)
-        self._events = events_copy
-    
-    def _marker(self, x, min_y, color="black"):
-        max_y = (
-            len(self._channels)
-            *(self._channel_height+self._channel_gap)-self._channel_height/2)
-        self.plot.plot([x, x], [min_y, max_y], "-", lw=0.3, color=color)
-    
-    def _update_time_range(self, begin, end):
-        self._t_min = min(self._t_min, begin)
-        self._t_max = max(self._t_max, end)
+            (begin+end)/2, y, label,
+            color=color, bbox={"fc": "white", "ec": "none"},
+            horizontalalignment="center", verticalalignment="center")
+        
+        self.plot.vlines(
+            [begin, end],
+            y, self._channel_height/2+max(self._channels.values()),
+            **self._background_line_style)
