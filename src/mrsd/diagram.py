@@ -114,6 +114,36 @@ class Diagram(object):
         self.add(channel, event)
         return event
     
+    def readout(
+            self, adc_channel, gradient_channel, duration,
+            echo_amplitude=1, gradient_amplitude=1, ramp=0, 
+            adc_kwargs=None, echo_kwargs=None, gradient_kwargs=None, 
+            **kwargs):
+        adc = self.adc(adc_channel, duration, **(adc_kwargs or {}), **kwargs)
+        echo = self.echo(
+            adc_channel, adc.duration, echo_amplitude, center=adc.center,
+            **(echo_kwargs or {}))
+        gradient = self.gradient(
+            gradient_channel, adc.duration, gradient_amplitude, ramp,
+            center=adc.center, **(gradient_kwargs or {}))
+        
+        return adc, echo, gradient
+    
+    def selective_pulse(
+            self, pulse_channel, gradient_channel, duration,
+            pulse_amplitude=1, gradient_amplitude=1,
+            envelope=None, ramp=0, pulse_kwargs=None, gradient_kwargs=None,
+            **kwargs):
+        pulse = self.rf_pulse(
+            pulse_channel, duration, pulse_amplitude,
+            envelope or rf_pulse.sinc_envelope, **(pulse_kwargs or {}),
+            **kwargs)
+        gradient = self.gradient(
+            gradient_channel, pulse.duration, gradient_amplitude, ramp,
+            center=pulse.center, **(gradient_kwargs or {}))
+        
+        return pulse, gradient
+    
     def annotate(self, channel, x, y, text, **kwargs):
         """ Add an annotation to the diagram
         """
