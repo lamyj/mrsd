@@ -8,6 +8,7 @@ from .adc import ADC
 from .echo import Echo
 from .gradient import Gradient
 from .multi_gradient import MultiGradient
+from . import rf_pulse
 from .rf_pulse import RFPulse
 
 class Diagram(object):
@@ -86,11 +87,21 @@ class Diagram(object):
         self.add(channel, event)
         return event
     
+    def gaussian_pulse(self, channel, *args, **kwargs):
+        """ Add a hard RF pulse event to the specified channel.
+        """
+        
+        kwargs["envelope"] = rf_pulse.gaussian_envelope
+        event = RFPulse(*args, **kwargs)
+        self.add(channel, event)
+        return event
+    
     def hard_pulse(self, channel, *args, **kwargs):
         """ Add a hard RF pulse event to the specified channel.
         """
         
-        event = RFPulse(*args, envelope="box", **kwargs)
+        kwargs["envelope"] = rf_pulse.box_envelope
+        event = RFPulse(*args, **kwargs)
         self.add(channel, event)
         return event
     
@@ -98,7 +109,7 @@ class Diagram(object):
         """ Add a sinc RF pulse event to the specified channel.
         """
         
-        kwargs["envelope"] = "sinc"
+        kwargs["envelope"] = rf_pulse.sinc_envelope
         event = RFPulse(*args, **kwargs)
         self.add(channel, event)
         return event
