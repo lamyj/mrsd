@@ -23,6 +23,25 @@ class Gradient(Event):
         super().__init__(
             self.ramp_up+self.flat_top+self.ramp_down, amplitude, **kwargs)
     
+    def adapt(
+            self, flat_top, area_factor,
+            ramp=0, ramp_up=None, ramp_down=None, **kwargs):
+        """ Return a gradient with an area equal to a factor of the current
+            gradient.
+        """
+        
+        area = self.amplitude * (self.ramp_up/2 + self.flat_top + self.ramp_down/2)
+        target_area = area * area_factor
+        
+        if ramp_up is None:
+            ramp_up = ramp
+        if ramp_down is None:
+            ramp_down = ramp
+        amplitude = target_area / (ramp_up/2 + flat_top + ramp_down/2)
+        
+        return Gradient(
+            flat_top, amplitude, ramp_up=ramp_up, ramp_down=ramp_down, **kwargs)
+    
     def get_path(self):
         return matplotlib.path.Path([
             [self.begin, 0],
