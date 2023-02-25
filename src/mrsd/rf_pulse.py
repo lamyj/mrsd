@@ -28,7 +28,19 @@ def sinc_envelope(pulse):
     return xs, ys
 
 class RFPulse(Event):
-    """ RF pulse event, represented by a cardinal sine.
+    """ RF pulse event, represented by a user-defined envelope
+        
+        :param duration: duration of the pulse
+        :param amplitude: maximum amplitude
+        :param envelope: sinc_envelope (default), box_envelope, or
+            gaussian_envelope
+        :param lobes: number of lobes on each side of a sinc envelope (defaults
+            to 3)
+        :param apodization: apodization of a sinc envelope (None (default),
+            "hann", or "hamming")
+        :param sd: standard deviation of a Gaussian envelope (defaults to 0.3)
+        :param points: number of points used to draw the envelope (defaults to
+            101)
     """
     
     def __init__(self, duration, amplitude, envelope=sinc_envelope, **kwargs):

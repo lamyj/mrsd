@@ -12,6 +12,13 @@ from . import rf_pulse
 from .rf_pulse import RFPulse
 
 class Diagram(object):
+    """ MR sequence diagram
+        
+        :param plot: an instance of matplotlib axes (plot, subplot, etc.)
+        :param channels: sequence of channels names in the plot, from top to
+            bottom
+    """
+    
     def __init__(self, plot, channels):
         self._channel_height = 2
         self._channel_gap = 0.2
@@ -116,15 +123,38 @@ class Diagram(object):
     
     def readout(
             self, adc_channel, gradient_channel, duration,
-            echo_amplitude=1, gradient_amplitude=1, ramp=0, 
-            adc_kwargs=None, echo_kwargs=None, gradient_kwargs=None, 
-            **kwargs):
-        adc = self.adc(adc_channel, duration, **(adc_kwargs or {}), **kwargs)
+            echo_amplitude=1, gradient_amplitude=1,
+            ramp=0, ramp_up=None, ramp_down=None, 
+            begin=None, end=None, center=None,
+            adc_kwargs=None, echo_kwargs=None, gradient_kwargs=None):
+        """ Add a readout block (echo, ADC and gradient)
+            
+            :param adc_channel: channel of the echo and ADC
+            :param gradient_channel: channel of the gradient
+            :param duration: duration of the echo, ADC, and gradient flat-top
+            :param echo_amplitude: amplitude of the echo
+            :param gradient_amplitude: amplitude of the gradient flat-top
+            :param ramp,ramp_up,ramp_down: ramp durations of the gradient.
+                Use `ramp` for symmetric gradients, and both `ramp_up` and
+                `ramp_down` for asymmetric gradients
+            :param begin,end,center: time of the begin, end, or center of the
+                echo/ADC. Only one must be specified.
+            :param adc_kwargs: extra parameters for the ADC event (e.g. style)
+            :param echo_kwargs: extra parameters for the echo event (e.g. style)
+            :param gradient_kwargs: extra parameters for the gradient event
+                (e.g. style)
+        """
+        
+        adc = self.adc(
+            adc_channel, duration, begin=begin, end=end, center=center,
+            **(adc_kwargs or {}))
         echo = self.echo(
             adc_channel, adc.duration, echo_amplitude, center=adc.center,
             **(echo_kwargs or {}))
         gradient = self.gradient(
-            gradient_channel, adc.duration, gradient_amplitude, ramp,
+            gradient_channel, adc.duration, gradient_amplitude,
+            ramp_up=ramp_up if ramp_up is not None else ramp,
+            ramp_down=ramp_down if ramp_down is not None else ramp,
             center=adc.center, **(gradient_kwargs or {}))
         
         return adc, echo, gradient
@@ -132,25 +162,62 @@ class Diagram(object):
     def selective_pulse(
             self, pulse_channel, gradient_channel, duration,
             pulse_amplitude=1, gradient_amplitude=1,
-            envelope=None, ramp=0, pulse_kwargs=None, gradient_kwargs=None,
-            **kwargs):
+            envelope=None, ramp=0, ramp_up=None, ramp_down=None, 
+            begin=None, end=None, center=None,
+            pulse_kwargs=None, gradient_kwargs=None):
+        """ Add a selective pulse block (pulse and gradient)
+            
+            :param pulse_channel: channel of the RF pulse
+            :param gradient_channel: channel of the gradient
+            :param duration: duration of the pulse and gradient flat-top
+            :param pulse_amplitude: amplitude of the RF pulse
+            :param gradient_amplitude: amplitude of the gradient flat-top
+            :param envelope: envelope of the pulse (default to sinc)
+            :param ramp,ramp_up,ramp_down: ramp durations of the gradient.
+                Use `ramp` for symmetric gradients, and both `ramp_up` and
+                `ramp_down` for asymmetric gradients
+            :param begin,end,center: time of the begin, end, or center of the
+                echo/ADC. Only one must be specified.
+            :param pulse_kwargs: extra parameters for the pulse event (e.g.
+                style)
+            :param gradient_kwargs: extra parameters for the gradient event
+                (e.g. style)
+        """
+        
         pulse = self.rf_pulse(
             pulse_channel, duration, pulse_amplitude,
-            envelope or rf_pulse.sinc_envelope, **(pulse_kwargs or {}),
-            **kwargs)
+            envelope or rf_pulse.sinc_envelope,
+            begin=begin, end=end, center=center,
+            **(pulse_kwargs or {}))
         gradient = self.gradient(
-            gradient_channel, pulse.duration, gradient_amplitude, ramp,
+            gradient_channel, pulse.duration, gradient_amplitude,
+            ramp_up=ramp_up if ramp_up is not None else ramp,
+            ramp_down=ramp_down if ramp_down is not None else ramp,
             center=pulse.center, **(gradient_kwargs or {}))
         
         return pulse, gradient
     
     def annotate(self, channel, x, y, text, **kwargs):
-        """ Add an annotation to the diagram
+        """ Add an annotation
+            
+            :param channel: channel to which the annotation is added
+            :param x: time of the annotation
+            :param y: relative position of the annotation in the channel
+            :param text: text of the annotation
+            :param kwargs: extra parameters passed to matplotlib.axes.Axes.text
         """
         
         self.plot.text(x, self._channels[channel]+y, text, **kwargs)
     
     def interval(self, begin, end, y, label, color="k"):
+        """ Add a time interval annotation
+            
+            :param begin,end: begin and end time of the interval
+            :param y: vertical position of the annotation
+            :param label: label of the annotation
+            :param color: color of the annotation label
+        """
+        
         self.plot.set(ylim=min(y, self.plot.get_ylim()[0]))
         
         self.plot.annotate(

@@ -6,11 +6,17 @@ from .event import Event
 class MultiGradient(Event):
     """ Multiple gradient events (e.g. phase encoding), represented by nested
         trapezoids.
+        
+        :param flat_top: duration of the gradient flat-top
+        :param max_amplitude: maximum amplitude of the gradient flat-top
+        :param ramp,ramp_up,ramp_down: ramp durations of the gradient.
+            Use `ramp` for symmetric gradients, and both `ramp_up` and
+            `ramp_down` for asymmetric gradients
+        :param steps: number of steps drawn between the maximum and minimum
+            amplitude
     """
     
-    def __init__(
-            self, flat_top, max_amplitude, ramp=0, direction="TODO", steps=5,
-            **kwargs):
+    def __init__(self, flat_top, max_amplitude, ramp=0, steps=5, **kwargs):
         
         kwargs.setdefault("ramp_up", ramp)
         kwargs.setdefault("ramp_down", ramp)

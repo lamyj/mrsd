@@ -7,9 +7,10 @@ class Event(matplotlib.patches.Patch):
         
         :param duration: total duration.
         :param amplitude: normalized amplitude between -1 and +1.
-        :param begin, end, center: time of the begin, end, or center of the
+        :param begin,end,center: time of the begin, end, or center of the
             event. Only one must be specified.
         :param offset: horizontal and vertical offset to position the event.
+        :param kwargs: passed to matplotlib.patches.Patch
     """
     
     def __init__(

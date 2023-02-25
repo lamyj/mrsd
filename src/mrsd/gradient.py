@@ -4,6 +4,12 @@ from .event import Event
 
 class Gradient(Event):
     """ Gradient event, represented by a trapezoid.
+        
+        :param flat_top: duration of the gradient flat-top
+        :param amplitude: amplitude of the gradient flat-top
+        :param ramp,ramp_up,ramp_down: ramp durations of the gradient.
+            Use `ramp` for symmetric gradients, and both `ramp_up` and
+            `ramp_down` for asymmetric gradients
     """
     
     def __init__(self, flat_top, amplitude, ramp=0, **kwargs):
