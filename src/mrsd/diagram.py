@@ -235,3 +235,9 @@ class Diagram(object):
             [begin, end],
             y, self._channel_height/2+max(self._channels.values()),
             **self._background_line_style)
+    
+    def y(self, channel):
+        """ Return the y coordinate of the center of a channnel.
+        """
+        
+        return self._channels[channel]
