@@ -53,6 +53,7 @@ class Diagram(object):
         
         event.offset[1] += self._channels[channel]
         self.plot.add_patch(event)
+        self.plot.autoscale_view()
     
     def adc(self, channel, *args, **kwargs):
         """ Add an ADC event to the specified channel.
