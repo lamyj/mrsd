@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("../src"))
+
 project = "mrsd"
 copyright = "2023, Julien Lamy"
 author = "Julien Lamy"
