@@ -21,7 +21,7 @@ setuptools.setup(
     license="MIT",
     
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Framework :: Matplotlib",
         "Intended Audience :: Education",
@@ -38,7 +38,7 @@ setuptools.setup(
     packages=["mrsd"],
     package_dir={"mrsd": "src/mrsd"},
     
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     
     install_requires=["matplotlib>=3.3", "numpy"],
 )
