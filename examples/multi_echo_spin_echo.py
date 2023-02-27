@@ -1,70 +1,75 @@
+""" Draw the sequence diagram of a multi-echo gradient echo sequence, with
+    bipolar readout gradients.
+"""
+
+import copy
+
 import matplotlib.pyplot
+import mrsd
 import numpy
 
-import mrsd
-
-# Define sequence parameters: echo time, train length, and durations of pulses,
-# encoding, and readout.
-TE = 8
-train_length = 5
-d_pulse, d_encoding, d_readout = 1, 1, 2
-
-# Define time intervals
-echoes = TE*numpy.arange(1, 1+train_length)
-pulses = [mrsd.interval(x, d_pulse) for x in [0, *(echoes-TE/2)]]
-encoding = pulses[0][1], pulses[0][1]+d_encoding
-readouts = [mrsd.interval(x, d_readout) for x in echoes]
-
-# Compute slice-selection and readout gradient pairs
-G_slice = mrsd.gradient_pair(+1*d_pulse, -0.5, d_pulse, d_encoding)
-G_readout = mrsd.gradient_pair(+1*d_readout, -0.5, d_readout, d_encoding)
+# Define the tissue and sequence parameters (arbitrary units): T2,
+# echo and repetition times, durations of ramp, pulses, encoding and readout,
+# length of the echo train
+T2 = 10
+TE, TR = 10, 40
+d_pulse, d_encoding, d_readout, d_ramp = 1, 3, 1, 0.1
+train_length = 10
 
 # Create the underlying Matplotlib objects and the diagram
-matplotlib.pyplot.rcParams["lines.linewidth"] = 1
-figure, plot = matplotlib.pyplot.subplots()
-diagram = mrsd.Diagram(
-    plot, ["RF", "$G_{slice}$", "$G_{phase}$", "$G_{readout}$", "Signal"])
+figure, plot = matplotlib.pyplot.subplots(tight_layout=True, figsize=(10,5))
+diagram = mrsd.Diagram(plot, ["RF", "$G_z$", "$G_y$", "$G_x$", "Echoes"])
 
-# Excitation pulse
-diagram.sinc_pulse("RF", *pulses[0], 0.5)
-diagram.gradient("$G_{slice}$", *pulses[0], G_slice[0])
-diagram.idle(["$G_{phase}$", "$G_{readout}$", "Signal"], *pulses[0])
+# Add the excitation RF pulse, show the beginning of the next repetition
+excitation, excitation_selection = diagram.selective_pulse(
+    "RF", "$G_z$", d_pulse, 0.5, 0.5, ramp=d_ramp, center=0)
+diagram.annotate("RF", excitation.center+0.2, 1, "90°")
+diagram.add("RF", copy.copy(excitation).move(TR))
+diagram.add("$G_z$", copy.copy(excitation_selection).move(TR))
+diagram.annotate("RF", excitation.center+0.2+TR, 1, "90°")
+diagram.interval(0, TR, -2, "TR")
 
-# Encoding: rewind slice-selection gradient, run phase gradient, prephase
-# read-out gradient
-diagram.gradient("$G_{slice}$", *encoding, G_slice[1])
-diagram.stepped_gradient("$G_{phase}$", *encoding, 1)
-diagram.gradient("$G_{readout}$", *encoding, G_readout[1])
-diagram.idle(["RF", "Signal"], *encoding)
+# Add the refocalization RF pulse
+refocalization, _ = diagram.selective_pulse(
+    "RF", "$G_z$", d_pulse, 1, 0.5, ramp=d_ramp, center=TE/2)
+diagram.annotate("RF", refocalization.center+0.2, 1, "180°")
+diagram.interval(0, TE/2, -1, "TE/2")
 
-diagram.idle_all(encoding[1], pulses[1][0])
+# Add the first echo
+echo = diagram.echo("Echoes", d_readout, 1, center=TE)
+readout = diagram.gradient("$G_x$", d_readout, 1, d_ramp, center=echo.center)
+diagram.interval(0, TE, -1.5, "TE")
 
-for i in range(train_length):
-    diagram.sinc_pulse("RF", *pulses[i+1], 1)
-    diagram.idle(
-        ["$G_{slice}$", "$G_{phase}$", "$G_{readout}$", "Signal"], *pulses[i+1])
+# Add the encoding gradients
+diagram.add(
+    "$G_z$", excitation_selection.adapt(
+        d_encoding, -0.5, d_ramp, begin=excitation_selection.end))
+diagram.multi_gradient(
+    "$G_y$", d_encoding, 0.5, d_ramp, begin=excitation_selection.end)
+diagram.add(
+    "$G_x$", readout.adapt(
+        d_encoding, -0.5, d_ramp, begin=excitation_selection.end))
+
+# Add the other echoes in the train
+for echo in range(1, train_length):
+    refocalization_selection = diagram.gradient(
+        "$G_z$", d_pulse, 0.5, d_ramp, begin=readout.end)
+    refocalization = diagram.sinc_pulse(
+        "RF", d_pulse, 1, center=refocalization_selection.center)
+    diagram.annotate(
+        "RF", refocalization.center+0.2, 1, "180°", fontsize=8, color="0.5")
     
-    diagram.idle_all(pulses[i+1][1], readouts[i][0])
+    readout = diagram.gradient(
+        "$G_x$", d_readout, 1, d_ramp, begin=refocalization_selection.end)
     
-    diagram.gradient("$G_{readout}$", *readouts[i], G_readout[0])
-    diagram.echo("Signal", *readouts[i], numpy.exp(-i/2))
-    diagram.idle(["RF", "$G_{slice}$", "$G_{phase}$", "Signal"], *readouts[i])
-    
-    if i != train_length-1:
-        diagram.idle_all(readouts[i][1], pulses[i+2][0])
+    elapsed = readout.center - TE
+    echo_amplitude = numpy.exp(-elapsed/T2)
+    diagram.echo("Echoes", d_readout, echo_amplitude, center=readout.center)
 
-# Add annotations: flip angles and TE-related intervals
-diagram.annotate("RF", pulses[0][1], r"90°", 1)
-diagram.annotate("RF", pulses[1][1], r"180°", 1)
-diagram.interval(0, TE/2, -1.5, "TE/2")
-diagram.interval(0, TE, -2.5, "TE")
-diagram.interval(TE, 2*TE, -2.5, "TE")
+# Add the T2 decay curve
+xs = numpy.linspace(0, readout.end-TE, 100)
+ys = numpy.exp(-xs/T2)
+plot.plot(xs+TE, ys+diagram.y("Echoes"), color="C0", lw=1)
+plot.text(TE+xs[len(xs)//2], 0.5, "$e^{-t/T_2}$", color="C0")
 
-# Add effect of T2 relaxation
-x = numpy.linspace(numpy.mean(echoes[0]), numpy.mean(echoes[-1]), 100)
-y = numpy.exp(-numpy.linspace(0, train_length-1, 100)/2)
-plot.plot(x, y, "C0")
-plot.annotate(r"$\exp(-t/T_2)$", (numpy.mean(echoes[-2]), 0.5), color="C0")
-
-figure.tight_layout()
 matplotlib.pyplot.show()
