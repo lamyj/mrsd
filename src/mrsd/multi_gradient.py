@@ -8,7 +8,7 @@ class MultiGradient(Event):
         trapezoids.
         
         :param flat_top: duration of the gradient flat-top
-        :param max_amplitude: maximum amplitude of the gradient flat-top
+        :param amplitude: maximum amplitude of the gradient flat-top
         :param ramp,ramp_up,ramp_down: ramp durations of the gradient.
             Use `ramp` for symmetric gradients, and both `ramp_up` and
             `ramp_down` for asymmetric gradients
@@ -16,7 +16,7 @@ class MultiGradient(Event):
             amplitude
     """
     
-    def __init__(self, flat_top, max_amplitude, ramp=0, steps=5, **kwargs):
+    def __init__(self, flat_top, amplitude, ramp=0, steps=5, **kwargs):
         
         kwargs.setdefault("ramp_up", ramp)
         kwargs.setdefault("ramp_down", ramp)
@@ -28,7 +28,7 @@ class MultiGradient(Event):
         self.steps = steps
         
         super().__init__(
-            self.ramp_up+self.flat_top+self.ramp_down, max_amplitude, **kwargs)
+            self.ramp_up+self.flat_top+self.ramp_down, amplitude, **kwargs)
         
     def get_path(self):
         amplitudes = numpy.linspace(-self.amplitude, self.amplitude, self.steps)
@@ -56,3 +56,11 @@ class MultiGradient(Event):
                 [self.end-extra_down, amplitude]]))
         
         return matplotlib.path.Path.make_compound_path(*paths)
+    
+    @property
+    def _fields(self):
+        return {
+            x: getattr(self, x)
+            for x in [
+                "flat_top", "amplitude", "ramp_up", "ramp_down", "steps",
+                "begin"]}
